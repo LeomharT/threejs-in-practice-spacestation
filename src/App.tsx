@@ -184,8 +184,8 @@ export default function App() {
 		let currentSpeed = 0.1;
 		let acceleration = 0.1;
 
-		let currentScalc = 0.1;
-		let accelerationScalc = 0.1;
+		let currentScalc = STARS.map(() => 1.0);
+		let accelerationScalc = STARS.map(() => 1.0);
 
 		const updateObject = new Object3D();
 
@@ -203,7 +203,10 @@ export default function App() {
 
 			// Won't reach 0.5 but close
 			currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
-			currentScalc += (accelerationScalc - currentScalc) * lerpSpeed;
+
+			for (let i = 0; i < STAR_COUNT; i++) {
+				currentScalc[i] += (accelerationScalc[i] - currentScalc[i]) * lerpSpeed;
+			}
 
 			star.instanceMatrix.needsUpdate = true;
 			for (let i = 0; i < STAR_COUNT; i++) {
@@ -215,7 +218,7 @@ export default function App() {
 
 				updateObject.position.copy(STARS[i].pos);
 
-				updateObject.scale.x = STARS[i].len * currentScalc;
+				updateObject.scale.x = currentScalc[i];
 
 				updateObject.updateMatrix();
 
@@ -235,11 +238,11 @@ export default function App() {
 
 		function accelerate() {
 			acceleration = 1.0;
-			accelerationScalc = 1.0;
+			accelerationScalc = STARS.map((value) => value.len);
 		}
 		function decelerate() {
 			acceleration = 0.1;
-			accelerationScalc = 0.1;
+			accelerationScalc = STARS.map(() => 1.0);
 		}
 		window.addEventListener('pointerdown', accelerate);
 		window.addEventListener('pointerup', decelerate);
