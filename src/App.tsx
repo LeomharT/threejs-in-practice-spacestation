@@ -11,6 +11,7 @@ import {
 	PlaneGeometry,
 	Scene,
 	ShaderMaterialParameters,
+	Vector2,
 	Vector3,
 	WebGLRenderer,
 } from 'three';
@@ -19,9 +20,11 @@ import {
 	OutputPass,
 	RenderPass,
 	ShaderPass,
+	UnrealBloomPass,
 } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { Pane } from 'tweakpane';
 import fragmentShader from './shader/fragment.glsl?raw';
 import vertexShader from './shader/vertex.glsl?raw';
 import classes from './style.module.css';
@@ -48,7 +51,7 @@ export default function App() {
 		el.append(renderer.domElement);
 
 		const scene = new Scene();
-		scene.background = new Color('#1e1e1e');
+		scene.background = new Color('#06101c');
 
 		const camera = new PerspectiveCamera(
 			75,
@@ -75,6 +78,14 @@ export default function App() {
 		const renderPass = new RenderPass(scene, camera);
 		composer.addPass(renderPass);
 
+		const bloomPass = new UnrealBloomPass(
+			new Vector2(window.innerWidth, window.innerHeight),
+			0.25,
+			0.5,
+			0
+		);
+		composer.addPass(bloomPass);
+
 		const shiftPass = new ShaderPass({
 			uniforms: {
 				tDiffuse: { value: null },
@@ -92,19 +103,31 @@ export default function App() {
 		 * Variables
 		 */
 
-		const STAR_COUNT = 20;
+		const STAR_COUNT = 1000;
 		const STARS: {
 			pos: Vector3;
 			speed: number;
+			len: number;
 		}[] = [];
 
 		function resetStar() {
-			const pos = new Vector3(random(1, -1), random(1, -1), random(1, -1));
+			let pos;
+			let len;
+
+			if (Math.random() > 0.8) {
+				pos = new Vector3(random(-15, 15), random(-10, 10), random(-10, 10));
+				len = random(10.5, 100);
+			} else {
+				pos = new Vector3(random(-30, 15), random(-10, 10), random(-10, 10));
+				len = random(10.5, 200);
+			}
+
 			const speed = random(19.5, 42);
 
 			return {
 				pos,
 				speed,
+				len,
 			};
 		}
 
@@ -145,6 +168,10 @@ export default function App() {
 		 * Pane
 		 */
 
+		const pane = new Pane({ title: 'Debug Params' });
+		pane.addBinding(bloomPass, 'radius');
+		pane.addBinding(bloomPass, 'strength');
+
 		/**
 		 * Events
 		 */
@@ -152,9 +179,13 @@ export default function App() {
 		const clock = new Clock();
 		let previousTime = 0;
 
+		let lerpSpeed = 0.005;
+
 		let currentSpeed = 0.1;
 		let acceleration = 0.1;
-		let lerpSpeed = 0.005;
+
+		let currentScalc = 0.1;
+		let accelerationScalc = 0.1;
 
 		const updateObject = new Object3D();
 
@@ -172,15 +203,19 @@ export default function App() {
 
 			// Won't reach 0.5 but close
 			currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
+			currentScalc += (accelerationScalc - currentScalc) * lerpSpeed;
 
 			star.instanceMatrix.needsUpdate = true;
 			for (let i = 0; i < STAR_COUNT; i++) {
-				if (STARS[i].pos.x > 3.0) {
+				if (STARS[i].pos.x > 35.0) {
 					STARS[i] = resetStar();
 				}
 
 				STARS[i].pos.x += STARS[i].speed * deltaTime * currentSpeed;
+
 				updateObject.position.copy(STARS[i].pos);
+
+				updateObject.scale.x = STARS[i].len * currentScalc;
 
 				updateObject.updateMatrix();
 
@@ -199,10 +234,12 @@ export default function App() {
 		window.addEventListener('resize', resize);
 
 		function accelerate() {
-			acceleration = 0.5;
+			acceleration = 1.0;
+			accelerationScalc = 1.0;
 		}
 		function decelerate() {
 			acceleration = 0.1;
+			accelerationScalc = 0.1;
 		}
 		window.addEventListener('pointerdown', accelerate);
 		window.addEventListener('pointerup', decelerate);
