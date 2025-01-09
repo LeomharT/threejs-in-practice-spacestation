@@ -11,12 +11,14 @@ import {
 	PlaneGeometry,
 	Scene,
 	ShaderMaterialParameters,
+	TextureLoader,
 	Vector2,
 	Vector3,
 	WebGLRenderer,
 } from 'three';
 import {
 	EffectComposer,
+	GLTFLoader,
 	OutputPass,
 	RenderPass,
 	ShaderPass,
@@ -59,7 +61,7 @@ export default function App() {
 			0.1,
 			1000
 		);
-		camera.position.set(1, 1, 1);
+		camera.position.set(1, 0, 0);
 		camera.lookAt(scene.position);
 
 		const controls = new OrbitControls(camera, renderer.domElement);
@@ -100,10 +102,20 @@ export default function App() {
 		composer.addPass(outputPass);
 
 		/**
+		 * Loaders
+		 */
+
+		const textureLoader = new TextureLoader();
+		textureLoader.setPath('/src/assets/texture/');
+
+		const gltfLoader = new GLTFLoader();
+		gltfLoader.setPath('/src/assets/models/');
+
+		/**
 		 * Variables
 		 */
 
-		const STAR_COUNT = 1000;
+		const STAR_COUNT = 2500;
 		const STARS: {
 			pos: Vector3;
 			speed: number;
@@ -141,8 +153,9 @@ export default function App() {
 
 		const starGeometry = new PlaneGeometry(0.05, 0.05);
 		const starMaterial = new MeshBasicMaterial({
+			transparent: true,
 			side: DoubleSide,
-			color: 'white',
+			color: '#dadff1',
 		});
 		const star = new InstancedMesh(starGeometry, starMaterial, STAR_COUNT);
 
@@ -179,7 +192,8 @@ export default function App() {
 		const clock = new Clock();
 		let previousTime = 0;
 
-		let lerpSpeed = 0.005;
+		const lerpSpeed = 0.005;
+		const decelerateSpeed = 0.05;
 
 		let currentSpeed = 0.1;
 		let acceleration = 0.1;
@@ -205,7 +219,12 @@ export default function App() {
 			currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
 
 			for (let i = 0; i < STAR_COUNT; i++) {
-				currentScalc[i] += (accelerationScalc[i] - currentScalc[i]) * lerpSpeed;
+				let speed = lerpSpeed;
+				if (accelerationScalc[i] < currentScalc[i]) {
+					speed = decelerateSpeed;
+				}
+
+				currentScalc[i] += (accelerationScalc[i] - currentScalc[i]) * speed;
 			}
 
 			star.instanceMatrix.needsUpdate = true;
@@ -217,9 +236,7 @@ export default function App() {
 				STARS[i].pos.x += STARS[i].speed * deltaTime * currentSpeed;
 
 				updateObject.position.copy(STARS[i].pos);
-
 				updateObject.scale.x = currentScalc[i];
-
 				updateObject.updateMatrix();
 
 				star.setMatrixAt(i, updateObject.matrix);
