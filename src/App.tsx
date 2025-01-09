@@ -1,16 +1,23 @@
 import { useEffect } from 'react';
 import {
+	AmbientLight,
 	AxesHelper,
 	Clock,
 	Color,
+	DirectionalLight,
+	DirectionalLightHelper,
 	DoubleSide,
 	InstancedMesh,
+	Mesh,
 	MeshBasicMaterial,
+	MeshStandardMaterial,
 	Object3D,
 	PerspectiveCamera,
 	PlaneGeometry,
 	Scene,
 	ShaderMaterialParameters,
+	SphereGeometry,
+	SRGBColorSpace,
 	TextureLoader,
 	Vector2,
 	Vector3,
@@ -48,20 +55,22 @@ export default function App() {
 			alpha: true,
 			antialias: true,
 		});
+		renderer.shadowMap.enabled = true;
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(window.devicePixelRatio);
+		renderer.outputColorSpace = SRGBColorSpace;
 		el.append(renderer.domElement);
 
 		const scene = new Scene();
 		scene.background = new Color('#06101c');
 
 		const camera = new PerspectiveCamera(
-			75,
+			30,
 			window.innerWidth / window.innerHeight,
 			0.1,
 			1000
 		);
-		camera.position.set(1, 0, 0);
+		camera.position.set(12, 0, 0);
 		camera.lookAt(scene.position);
 
 		const controls = new OrbitControls(camera, renderer.domElement);
@@ -86,7 +95,7 @@ export default function App() {
 			0.5,
 			0
 		);
-		composer.addPass(bloomPass);
+		// composer.addPass(bloomPass);
 
 		const shiftPass = new ShaderPass({
 			uniforms: {
@@ -170,12 +179,89 @@ export default function App() {
 
 		scene.add(star);
 
+		gltfLoader.load('sci-fi_space_station/scene.gltf', (data) => {
+			const spaceStation = data.scene;
+			spaceStation.rotation.y = Math.PI;
+
+			const objectNames = [
+				'Cube013_Material033_0',
+				'Cube012_Material033_0',
+				'Cube022_Material033_0',
+				'Cube014_Material033_0',
+				'Cube012_Material059_0',
+				'Cube013_Material059_0',
+				'Cube014_Material059_0',
+				'Cube022_Material059_0',
+			];
+			const whiteMaterial = new MeshStandardMaterial({
+				color: '#797979',
+			});
+			spaceStation.traverse((object) => {
+				if (objectNames.includes(object.name)) {
+					if (object instanceof Mesh) {
+						object.castShadow = true;
+						object.receiveShadow = true;
+						if (object.material instanceof MeshStandardMaterial) {
+							object.material = whiteMaterial;
+						}
+					}
+				}
+			});
+
+			const spaceStationEngine = spaceStation.getObjectByName(
+				'Cylinder028_Material039_0'
+			);
+
+			const enginePosition = new Vector3();
+			spaceStationEngine?.getWorldPosition(enginePosition);
+
+			const engineGeometry = new SphereGeometry(0.03, 32, 32);
+			const engineMaterial = new MeshBasicMaterial({
+				color: '#f9fafa',
+			});
+			const engine = new Mesh(engineGeometry, engineMaterial);
+			engine.position.set(-enginePosition.x - 0.2, 0.17, 0);
+
+			const engine2 = engine.clone();
+			engine.position.set(-enginePosition.x - 0.2, -0.17, 0);
+
+			const engine3 = engine.clone();
+			engine.position.set(-enginePosition.x - 0.2, 0, -0.17);
+
+			const engine4 = engine.clone();
+			engine.position.set(-enginePosition.x - 0.2, 0, 0.17);
+
+			spaceStation.add(engine);
+			spaceStation.add(engine2);
+			spaceStation.add(engine3);
+			spaceStation.add(engine4);
+
+			scene.add(spaceStation);
+		});
+
+		/**
+		 * Lights
+		 */
+
+		const ambientLight = new AmbientLight();
+		ambientLight.intensity = 0.0;
+		scene.add(ambientLight);
+
+		const directionalLight = new DirectionalLight();
+		directionalLight.castShadow = true;
+		directionalLight.position.set(2, 2, 2);
+		directionalLight.intensity = 2.0;
+		scene.add(directionalLight);
+
 		/**
 		 * Helpers
 		 */
 
 		const axesHelp = new AxesHelper();
 		scene.add(axesHelp);
+
+		const directionalLightHelper = new DirectionalLightHelper(directionalLight);
+		scene.add(directionalLightHelper);
 
 		/**
 		 * Pane
@@ -184,6 +270,12 @@ export default function App() {
 		const pane = new Pane({ title: 'Debug Params' });
 		pane.addBinding(bloomPass, 'radius');
 		pane.addBinding(bloomPass, 'strength');
+		pane.addBinding(directionalLight, 'position');
+		pane.addBinding(directionalLight, 'intensity');
+		pane.addBinding(camera, 'fov').on('change', (val) => {
+			camera.fov = val.value;
+			camera.updateProjectionMatrix();
+		});
 
 		/**
 		 * Events
@@ -208,6 +300,7 @@ export default function App() {
 
 			stats.update();
 			controls.update(time);
+			directionalLightHelper.update();
 
 			composer.render();
 
@@ -216,7 +309,7 @@ export default function App() {
 			previousTime = elapsedTime;
 
 			// Won't reach 0.5 but close
-			currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
+			// currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
 
 			for (let i = 0; i < STAR_COUNT; i++) {
 				let speed = lerpSpeed;
@@ -235,7 +328,7 @@ export default function App() {
 
 				STARS[i].pos.x += STARS[i].speed * deltaTime * currentSpeed;
 
-				updateObject.position.copy(STARS[i].pos);
+				// updateObject.position.copy(STARS[i].pos);
 				updateObject.scale.x = currentScalc[i];
 				updateObject.updateMatrix();
 
