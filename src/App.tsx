@@ -4,8 +4,6 @@ import {
 	AxesHelper,
 	Clock,
 	Color,
-	DirectionalLight,
-	DirectionalLightHelper,
 	DoubleSide,
 	InstancedMesh,
 	Mesh,
@@ -17,6 +15,8 @@ import {
 	Scene,
 	ShaderMaterialParameters,
 	SphereGeometry,
+	SpotLight,
+	SpotLightHelper,
 	SRGBColorSpace,
 	TextureLoader,
 	Vector2,
@@ -95,7 +95,7 @@ export default function App() {
 			0.5,
 			0
 		);
-		// composer.addPass(bloomPass);
+		composer.addPass(bloomPass);
 
 		const shiftPass = new ShaderPass({
 			uniforms: {
@@ -194,7 +194,7 @@ export default function App() {
 				'Cube022_Material059_0',
 			];
 			const whiteMaterial = new MeshStandardMaterial({
-				color: '#797979',
+				color: new Color('#797979').convertSRGBToLinear(),
 			});
 			spaceStation.traverse((object) => {
 				if (objectNames.includes(object.name)) {
@@ -247,11 +247,12 @@ export default function App() {
 		ambientLight.intensity = 0.0;
 		scene.add(ambientLight);
 
-		const directionalLight = new DirectionalLight();
-		directionalLight.castShadow = true;
-		directionalLight.position.set(2, 2, 2);
-		directionalLight.intensity = 2.0;
-		scene.add(directionalLight);
+		const spotLight = new SpotLight();
+		spotLight.castShadow = true;
+		spotLight.intensity = 6.0;
+		spotLight.position.set(10.4, -1.9, 2.8);
+		spotLight.angle = 0.1978126043;
+		scene.add(spotLight);
 
 		/**
 		 * Helpers
@@ -260,8 +261,8 @@ export default function App() {
 		const axesHelp = new AxesHelper();
 		scene.add(axesHelp);
 
-		const directionalLightHelper = new DirectionalLightHelper(directionalLight);
-		scene.add(directionalLightHelper);
+		const spotLightHelper = new SpotLightHelper(spotLight);
+		scene.add(spotLightHelper);
 
 		/**
 		 * Pane
@@ -270,8 +271,15 @@ export default function App() {
 		const pane = new Pane({ title: 'Debug Params' });
 		pane.addBinding(bloomPass, 'radius');
 		pane.addBinding(bloomPass, 'strength');
-		pane.addBinding(directionalLight, 'position');
-		pane.addBinding(directionalLight, 'intensity');
+		pane.addBinding(spotLight, 'intensity');
+		pane.addBinding(spotLight, 'position');
+		pane.addBinding(spotLight, 'angle', {
+			min: 0,
+			max: Math.PI / 2,
+		});
+		pane.addBinding(spotLight, 'color', {
+			color: { type: 'float' },
+		});
 		pane.addBinding(camera, 'fov').on('change', (val) => {
 			camera.fov = val.value;
 			camera.updateProjectionMatrix();
@@ -300,7 +308,7 @@ export default function App() {
 
 			stats.update();
 			controls.update(time);
-			directionalLightHelper.update();
+			spotLightHelper.update();
 
 			composer.render();
 
