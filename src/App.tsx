@@ -18,6 +18,7 @@ import {
 	SpotLight,
 	SpotLightHelper,
 	SRGBColorSpace,
+	Texture,
 	TextureLoader,
 	Vector2,
 	Vector3,
@@ -121,6 +122,12 @@ export default function App() {
 		gltfLoader.setPath('/src/assets/models/');
 
 		/**
+		 * Texture
+		 */
+
+		const engineAlpha = textureLoader.load('alpha.png');
+
+		/**
 		 * Variables
 		 */
 
@@ -164,7 +171,7 @@ export default function App() {
 		const starMaterial = new MeshBasicMaterial({
 			transparent: true,
 			side: DoubleSide,
-			color: '#dadff1',
+			color: '#f6f5f7',
 		});
 		const star = new InstancedMesh(starGeometry, starMaterial, STAR_COUNT);
 
@@ -178,6 +185,8 @@ export default function App() {
 		}
 
 		scene.add(star);
+
+		const pane = new Pane({ title: 'Debug Params' });
 
 		gltfLoader.load('sci-fi_space_station/scene.gltf', (data) => {
 			const spaceStation = data.scene;
@@ -194,16 +203,15 @@ export default function App() {
 				'Cube022_Material059_0',
 			];
 			const whiteMaterial = new MeshStandardMaterial({
-				color: new Color('#797979').convertSRGBToLinear(),
+				// color: new Color('#797979').convertSRGBToLinear(),
+				color: 0xffffff,
 			});
 			spaceStation.traverse((object) => {
-				if (objectNames.includes(object.name)) {
-					if (object instanceof Mesh) {
-						object.castShadow = true;
-						object.receiveShadow = true;
-						if (object.material instanceof MeshStandardMaterial) {
-							object.material = whiteMaterial;
-						}
+				if (object instanceof Mesh) {
+					object.castShadow = true;
+					object.receiveShadow = true;
+					if (object.material instanceof MeshStandardMaterial) {
+						object.material = whiteMaterial;
 					}
 				}
 			});
@@ -215,11 +223,22 @@ export default function App() {
 			const enginePosition = new Vector3();
 			spaceStationEngine?.getWorldPosition(enginePosition);
 
-			const engineGeometry = new SphereGeometry(0.03, 32, 32);
+			const engineColor = new Color('#e9f2fd');
+
+			const engineGeometry = new PlaneGeometry(0.1, 0.1, 64, 64);
 			const engineMaterial = new MeshBasicMaterial({
-				color: '#f9fafa',
+				transparent: true,
+				color: engineColor,
+				alphaMap: engineAlpha,
+				alphaTest: 0.0001,
+				side: DoubleSide,
 			});
+			pane.addBinding(engineMaterial, 'color', {
+				color: { type: 'float' },
+			});
+
 			const engine = new Mesh(engineGeometry, engineMaterial);
+			engine.rotation.y = Math.PI / 2;
 			engine.position.set(-enginePosition.x - 0.2, 0.17, 0);
 
 			const engine2 = engine.clone();
@@ -248,10 +267,11 @@ export default function App() {
 		scene.add(ambientLight);
 
 		const spotLight = new SpotLight();
+		spotLight.color = new Color('#e9f2fd');
 		spotLight.castShadow = true;
-		spotLight.intensity = 6.0;
-		spotLight.position.set(10.4, -1.9, 2.8);
-		spotLight.angle = 0.1978126043;
+		spotLight.intensity = 150.0;
+		spotLight.position.set(14.4, -2.1, 3.3);
+		spotLight.angle = 0.1395171118;
 		scene.add(spotLight);
 
 		/**
@@ -268,7 +288,6 @@ export default function App() {
 		 * Pane
 		 */
 
-		const pane = new Pane({ title: 'Debug Params' });
 		pane.addBinding(bloomPass, 'radius');
 		pane.addBinding(bloomPass, 'strength');
 		pane.addBinding(spotLight, 'intensity');
@@ -317,7 +336,7 @@ export default function App() {
 			previousTime = elapsedTime;
 
 			// Won't reach 0.5 but close
-			// currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
+			currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
 
 			for (let i = 0; i < STAR_COUNT; i++) {
 				let speed = lerpSpeed;
@@ -336,7 +355,7 @@ export default function App() {
 
 				STARS[i].pos.x += STARS[i].speed * deltaTime * currentSpeed;
 
-				// updateObject.position.copy(STARS[i].pos);
+				updateObject.position.copy(STARS[i].pos);
 				updateObject.scale.x = currentScalc[i];
 				updateObject.updateMatrix();
 
