@@ -5,6 +5,7 @@ import {
 	Clock,
 	Color,
 	DoubleSide,
+	EquirectangularReflectionMapping,
 	InstancedMesh,
 	Mesh,
 	MeshBasicMaterial,
@@ -14,11 +15,9 @@ import {
 	PlaneGeometry,
 	Scene,
 	ShaderMaterialParameters,
-	SphereGeometry,
 	SpotLight,
 	SpotLightHelper,
 	SRGBColorSpace,
-	Texture,
 	TextureLoader,
 	Vector2,
 	Vector3,
@@ -29,6 +28,7 @@ import {
 	GLTFLoader,
 	OutputPass,
 	RenderPass,
+	RGBELoader,
 	ShaderPass,
 	UnrealBloomPass,
 } from 'three/examples/jsm/Addons.js';
@@ -66,7 +66,7 @@ export default function App() {
 		scene.background = new Color('#06101c');
 
 		const camera = new PerspectiveCamera(
-			30,
+			25,
 			window.innerWidth / window.innerHeight,
 			0.1,
 			1000
@@ -121,11 +121,22 @@ export default function App() {
 		const gltfLoader = new GLTFLoader();
 		gltfLoader.setPath('/src/assets/models/');
 
+		const rgbeLoader = new RGBELoader();
+		rgbeLoader.setPath('/src/assets/texture/');
+
 		/**
 		 * Texture
 		 */
 
 		const engineAlpha = textureLoader.load('alpha.png');
+		rgbeLoader.load('kloofendal_48d_partly_cloudy_puresky_1k.hdr', (data) => {
+			/**
+			 * Environment
+			 */
+			scene.environment = data;
+			scene.environment.mapping = EquirectangularReflectionMapping;
+			scene.environmentIntensity = 1.0;
+		});
 
 		/**
 		 * Variables
@@ -269,8 +280,9 @@ export default function App() {
 		const spotLight = new SpotLight();
 		spotLight.color = new Color('#e9f2fd');
 		spotLight.castShadow = true;
-		spotLight.intensity = 150.0;
-		spotLight.position.set(14.4, -2.1, 3.3);
+		spotLight.shadow.mapSize.set(4096, 4096);
+		spotLight.intensity = 300.0;
+		spotLight.position.set(16.5, -4.2, 4.5);
 		spotLight.angle = 0.1395171118;
 		scene.add(spotLight);
 
@@ -302,6 +314,11 @@ export default function App() {
 		pane.addBinding(camera, 'fov').on('change', (val) => {
 			camera.fov = val.value;
 			camera.updateProjectionMatrix();
+		});
+		pane.addBinding(scene, 'environmentIntensity', {
+			step: 0.01,
+			min: 0,
+			max: 2,
 		});
 
 		/**
