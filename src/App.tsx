@@ -26,6 +26,8 @@ import {
 import {
 	EffectComposer,
 	GLTFLoader,
+	LUTCubeLoader,
+	LUTPass,
 	OutputPass,
 	RenderPass,
 	RGBELoader,
@@ -108,6 +110,16 @@ export default function App() {
 		} as ShaderMaterialParameters);
 		composer.addPass(shiftPass);
 
+		const lutCubeLoader = new LUTCubeLoader();
+		const lutPass = new LUTPass({});
+		lutCubeLoader.setPath('/src/assets/texture/');
+		lutCubeLoader.load('cubicle-99.CUBE', (data) => {
+			lutPass.lut = data.texture3D;
+			lutPass.intensity = 0.5;
+			pane.addBinding(lutPass, 'enabled');
+			composer.addPass(lutPass);
+		});
+
 		const outputPass = new OutputPass();
 		composer.addPass(outputPass);
 
@@ -135,14 +147,14 @@ export default function App() {
 			 */
 			scene.environment = data;
 			scene.environment.mapping = EquirectangularReflectionMapping;
-			scene.environmentIntensity = 1.0;
+			scene.environmentIntensity = 0.001;
 		});
 
 		/**
 		 * Variables
 		 */
 
-		const STAR_COUNT = 2500;
+		const STAR_COUNT = 1500;
 		const STARS: {
 			pos: Vector3;
 			speed: number;
@@ -199,26 +211,122 @@ export default function App() {
 
 		const pane = new Pane({ title: 'Debug Params' });
 
+		let spaceStationClone: undefined | Object3D;
+
+		const objectNames = [
+			'Cube013_Material033_0',
+			'Cube012_Material033_0',
+			'Cube022_Material033_0',
+			'Cube014_Material033_0',
+			'Cube012_Material059_0',
+			'Cube013_Material059_0',
+			'Cube014_Material059_0',
+			'Cube022_Material059_0',
+			//
+			'Cylinder043_Material029_0',
+			'Cylinder043_Material029_0_1',
+			//
+			'Cylinder015_Material006_0',
+			'Cylinder015_Material007_0',
+			'Cylinder015_Material010_0',
+			'Cylinder015_Material013_0',
+			'Cylinder015_Material038_0',
+			'Cylinder048_Material006_0',
+			'Cylinder048_Material007_0',
+			'Cylinder048_Material010_0',
+			'Cylinder048_Material013_0',
+			'Cylinder048_Material038_0',
+			'Cylinder050_Material006_0',
+			'Cylinder050_Material007_0',
+			'Cylinder050_Material010_0',
+			'Cylinder050_Material013_0',
+			'Cylinder050_Material038_0',
+			'Cylinder049_Material006_0',
+			'Cylinder049_Material007_0',
+			'Cylinder049_Material010_0',
+			'Cylinder049_Material013_0',
+			'Cylinder049_Material038_0',
+			//
+			'Cylinder033_Material047_0',
+			'Cylinder037_Material047_0',
+			'Cylinder032_Material047_0',
+			'Cylinder035_Material047_0',
+			'Cylinder039_Material047_0',
+			'Cylinder041_Material047_0',
+			'Cylinder038_Material047_0',
+			'Cylinder040_Material047_0',
+			'Cylinder044_Material047_0',
+			'Cylinder046_Material047_0',
+			'Cylinder042_Material047_0',
+			'Cylinder045_Material047_0',
+			'Cylinder016_Material047_0',
+			'Cylinder031_Material047_0',
+			'Cylinder051_Material047_0',
+			'Cylinder017_Material047_0',
+			// Cube
+			'Cube012_Material010_0',
+			'Cube013_Material010_0',
+			'Cube014_Material010_0',
+			'Cube022_Material010_0',
+			'Cube012_Material036_0',
+			'Cube013_Material036_0',
+			'Cube014_Material036_0',
+			'Cube022_Material036_0',
+			'Cube012_Material013_0',
+			'Cube013_Material013_0',
+			'Cube014_Material013_0',
+			'Cube022_Material013_0',
+			'Cube012_Material034_0',
+			'Cube013_Material034_0',
+			'Cube014_Material034_0',
+			'Cube022_Material034_0',
+			'Cube012_Material035_0',
+			'Cube013_Material035_0',
+			'Cube014_Material035_0',
+			'Cube022_Material035_0',
+
+			'Cube012_Material038_0',
+			'Cube013_Material038_0',
+			'Cube014_Material038_0',
+			'Cube022_Material038_0',
+
+			'Cube012_Material007_0',
+			'Cube013_Material007_0',
+			'Cube014_Material007_0',
+			'Cube022_Material007_0',
+			//
+			'Cylinder047_Material010_0',
+			'Cylinder047_Material044_0',
+		];
+
 		gltfLoader.load('sci-fi_space_station/scene.gltf', (data) => {
 			const spaceStation = data.scene;
 			spaceStation.rotation.y = Math.PI;
 
-			const objectNames = [
-				'Cube013_Material033_0',
-				'Cube012_Material033_0',
-				'Cube022_Material033_0',
-				'Cube014_Material033_0',
-				'Cube012_Material059_0',
-				'Cube013_Material059_0',
-				'Cube014_Material059_0',
-				'Cube022_Material059_0',
-			];
+			spaceStationClone = spaceStation.clone();
+
 			const whiteMaterial = new MeshStandardMaterial({
 				// color: new Color('#797979').convertSRGBToLinear(),
 				color: 0xffffff,
 			});
+
 			spaceStation.traverse((object) => {
 				if (object instanceof Mesh) {
+					if (objectNames.includes(object.name)) {
+						object.visible = false;
+					}
+					object.castShadow = true;
+					object.receiveShadow = true;
+					if (object.material instanceof MeshStandardMaterial) {
+						object.material = whiteMaterial;
+					}
+				}
+			});
+			spaceStationClone.traverse((object) => {
+				if (object instanceof Mesh) {
+					if (!objectNames.includes(object.name)) {
+						object.visible = false;
+					}
 					object.castShadow = true;
 					object.receiveShadow = true;
 					if (object.material instanceof MeshStandardMaterial) {
@@ -266,6 +374,7 @@ export default function App() {
 			spaceStation.add(engine3);
 			spaceStation.add(engine4);
 
+			scene.add(spaceStationClone);
 			scene.add(spaceStation);
 		});
 
@@ -281,7 +390,7 @@ export default function App() {
 		spotLight.color = new Color('#e9f2fd');
 		spotLight.castShadow = true;
 		spotLight.shadow.mapSize.set(4096, 4096);
-		spotLight.intensity = 300.0;
+		spotLight.intensity = 650.0;
 		spotLight.position.set(16.5, -4.2, 4.5);
 		spotLight.angle = 0.1395171118;
 		scene.add(spotLight);
@@ -338,6 +447,7 @@ export default function App() {
 		let accelerationScalc = STARS.map(() => 1.0);
 
 		const updateObject = new Object3D();
+		const q = new Vector3();
 
 		function render(time?: number) {
 			requestAnimationFrame(render);
@@ -351,6 +461,10 @@ export default function App() {
 			const elapsedTime = clock.getElapsedTime();
 			const deltaTime = elapsedTime - previousTime;
 			previousTime = elapsedTime;
+
+			if (spaceStationClone) {
+				spaceStationClone.rotation.x += deltaTime * 0.5;
+			}
 
 			// Won't reach 0.5 but close
 			currentSpeed += (acceleration - currentSpeed) * lerpSpeed;
