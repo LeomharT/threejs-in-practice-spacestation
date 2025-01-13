@@ -4,6 +4,8 @@ import {
 	AxesHelper,
 	Clock,
 	Color,
+	DirectionalLight,
+	DirectionalLightHelper,
 	DoubleSide,
 	EquirectangularReflectionMapping,
 	InstancedMesh,
@@ -393,7 +395,13 @@ export default function App() {
 		spotLight.intensity = 650.0;
 		spotLight.position.set(16.5, -4.2, 4.5);
 		spotLight.angle = 0.1395171118;
-		scene.add(spotLight);
+		// scene.add(spotLight);
+
+		const directionalLight = new DirectionalLight();
+		directionalLight.castShadow = true;
+		directionalLight.position.set(0, -3, 3);
+		directionalLight.intensity = 1.9;
+		scene.add(directionalLight);
 
 		/**
 		 * Helpers
@@ -404,6 +412,9 @@ export default function App() {
 
 		const spotLightHelper = new SpotLightHelper(spotLight);
 		scene.add(spotLightHelper);
+
+		const directionalLightHelper = new DirectionalLightHelper(directionalLight);
+		scene.add(directionalLightHelper);
 
 		/**
 		 * Pane
