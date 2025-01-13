@@ -119,7 +119,6 @@ export default function App() {
 			lutPass.lut = data.texture3D;
 			lutPass.intensity = 0.5;
 			pane.addBinding(lutPass, 'enabled');
-			composer.addPass(lutPass);
 		});
 
 		const outputPass = new OutputPass();
@@ -156,7 +155,7 @@ export default function App() {
 		 * Variables
 		 */
 
-		const STAR_COUNT = 1500;
+		const STAR_COUNT = 700;
 		const STARS: {
 			pos: Vector3;
 			speed: number;
@@ -320,7 +319,13 @@ export default function App() {
 					object.castShadow = true;
 					object.receiveShadow = true;
 					if (object.material instanceof MeshStandardMaterial) {
-						object.material = whiteMaterial;
+						if (
+							object.name !== 'Cylinder028_Material039_0' &&
+							object.name !== 'Plane010_Material009_0' &&
+							object.name !== 'Plane014_Material009_0'
+						) {
+							object.material = whiteMaterial;
+						}
 					}
 				}
 			});
