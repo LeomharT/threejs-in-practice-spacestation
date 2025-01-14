@@ -143,12 +143,18 @@ export default function App() {
 
 		const engineAlpha = textureLoader.load('alpha.png');
 		rgbeLoader.load('kloofendal_48d_partly_cloudy_puresky_1k.hdr', (data) => {
+			data.colorSpace = SRGBColorSpace;
 			/**
 			 * Environment
 			 */
 			scene.environment = data;
 			scene.environment.mapping = EquirectangularReflectionMapping;
 			scene.environmentIntensity = 0.001;
+			pane.addBinding(scene, 'environmentIntensity', {
+				step: 0.001,
+				min: 0,
+				max: 1,
+			});
 		});
 
 		/**
@@ -351,7 +357,7 @@ export default function App() {
 
 			const engineColor = new Color('#e9f2fd');
 
-			const engineGeometry = new PlaneGeometry(0.1, 0.1, 64, 64);
+			const engineGeometry = new PlaneGeometry(0.08, 0.08, 64, 64);
 			const engineMaterial = new MeshBasicMaterial({
 				transparent: true,
 				color: engineColor,
@@ -404,8 +410,8 @@ export default function App() {
 
 		const directionalLight = new DirectionalLight();
 		directionalLight.castShadow = true;
-		directionalLight.position.set(0, -3, 3);
-		directionalLight.intensity = 1.9;
+		directionalLight.position.set(0, -3, 1);
+		directionalLight.intensity = 2.5;
 		scene.add(directionalLight);
 
 		/**
@@ -427,6 +433,8 @@ export default function App() {
 
 		pane.addBinding(bloomPass, 'radius');
 		pane.addBinding(bloomPass, 'strength');
+		pane.addBinding(bloomPass, 'enabled');
+
 		pane.addBinding(spotLight, 'intensity');
 		pane.addBinding(spotLight, 'position');
 		pane.addBinding(spotLight, 'angle', {
@@ -436,14 +444,21 @@ export default function App() {
 		pane.addBinding(spotLight, 'color', {
 			color: { type: 'float' },
 		});
+
+		pane.addBinding(directionalLight, 'intensity', {
+			min: 0,
+			max: 100,
+			step: 0.01,
+		});
+		pane.addBinding(directionalLight, 'color', {
+			color: {
+				type: 'float',
+			},
+		});
+
 		pane.addBinding(camera, 'fov').on('change', (val) => {
 			camera.fov = val.value;
 			camera.updateProjectionMatrix();
-		});
-		pane.addBinding(scene, 'environmentIntensity', {
-			step: 0.01,
-			min: 0,
-			max: 2,
 		});
 
 		/**

@@ -6,7 +6,9 @@ varying vec2 vUv;
 void main() {
 	vec2 uv = vUv;
 
-	vec2 offset = vec2(0.0002, 0.0002);
+	float offsetVolume = 0.0002;
+
+	vec2 offset = vec2(offsetVolume, offsetVolume);
 
 	float r = texture2D(tDiffuse, uv).r;
 	float g = texture2D(tDiffuse, vec2(uv.x - offset.x, uv.y + offset.y)).g;
