@@ -463,7 +463,6 @@ export default function App() {
 		let accelerationScalc = STARS.map(() => 1.0);
 
 		const updateObject = new Object3D();
-		const q = new Vector3();
 
 		function render(time?: number) {
 			requestAnimationFrame(render);
