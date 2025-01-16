@@ -119,9 +119,11 @@ export default function App() {
 			lutPass.lut = data.texture3D;
 			lutPass.intensity = 0.5;
 			pane.addBinding(lutPass, 'enabled');
+			composer.addPass(lutPass);
 		});
 
 		const outputPass = new OutputPass();
+		outputPass.enabled = false;
 		composer.addPass(outputPass);
 
 		/**
@@ -143,7 +145,6 @@ export default function App() {
 
 		const engineAlpha = textureLoader.load('alpha.png');
 		rgbeLoader.load('kloofendal_48d_partly_cloudy_puresky_1k.hdr', (data) => {
-			data.colorSpace = SRGBColorSpace;
 			/**
 			 * Environment
 			 */
@@ -179,6 +180,9 @@ export default function App() {
 				pos = new Vector3(random(-30, 15), random(-10, 10), random(-10, 10));
 				len = random(10.5, 200);
 			}
+
+			if (pos.x > 3) pos.x += 12.5;
+			if (pos.x < 3) pos.x -= 12.5;
 
 			const speed = random(19.5, 42);
 
@@ -430,6 +434,12 @@ export default function App() {
 		/**
 		 * Pane
 		 */
+
+		pane.addBinding(scene, 'background', {
+			color: {
+				type: 'float',
+			},
+		});
 
 		pane.addBinding(bloomPass, 'radius');
 		pane.addBinding(bloomPass, 'strength');
