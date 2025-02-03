@@ -17,8 +17,6 @@ import {
 	PlaneGeometry,
 	Scene,
 	ShaderMaterialParameters,
-	SpotLight,
-	SpotLightHelper,
 	SRGBColorSpace,
 	TextureLoader,
 	Vector2,
@@ -28,8 +26,6 @@ import {
 import {
 	EffectComposer,
 	GLTFLoader,
-	LUTCubeLoader,
-	LUTPass,
 	OutputPass,
 	RenderPass,
 	RGBELoader,
@@ -67,7 +63,7 @@ export default function App() {
 		el.append(renderer.domElement);
 
 		const scene = new Scene();
-		scene.background = new Color('#06101c');
+		scene.background = new Color('#0d1b2f');
 
 		const camera = new PerspectiveCamera(
 			25,
@@ -112,18 +108,7 @@ export default function App() {
 		} as ShaderMaterialParameters);
 		composer.addPass(shiftPass);
 
-		const lutCubeLoader = new LUTCubeLoader();
-		const lutPass = new LUTPass({});
-		lutCubeLoader.setPath('/src/assets/texture/');
-		lutCubeLoader.load('cubicle-99.CUBE', (data) => {
-			lutPass.lut = data.texture3D;
-			lutPass.intensity = 0.5;
-			pane.addBinding(lutPass, 'enabled');
-			composer.addPass(lutPass);
-		});
-
 		const outputPass = new OutputPass();
-		outputPass.enabled = false;
 		composer.addPass(outputPass);
 
 		/**
@@ -162,7 +147,7 @@ export default function App() {
 		 * Variables
 		 */
 
-		const STAR_COUNT = 700;
+		const STAR_COUNT = 3000;
 		const STARS: {
 			pos: Vector3;
 			speed: number;
@@ -175,14 +160,14 @@ export default function App() {
 
 			if (Math.random() > 0.8) {
 				pos = new Vector3(random(-15, 15), random(-10, 10), random(-10, 10));
-				len = random(10.5, 100);
+				len = random(30.5, 100);
 			} else {
 				pos = new Vector3(random(-30, 15), random(-10, 10), random(-10, 10));
-				len = random(10.5, 200);
+				len = random(25.5, 200);
 			}
 
-			if (pos.x > 3) pos.x += 12.5;
-			if (pos.x < 3) pos.x -= 12.5;
+			if (pos.x > 3) pos.z += 3.5;
+			if (pos.x < 3) pos.z -= 3.5;
 
 			const speed = random(19.5, 42);
 
@@ -205,7 +190,7 @@ export default function App() {
 		const starMaterial = new MeshBasicMaterial({
 			transparent: true,
 			side: DoubleSide,
-			color: '#f6f5f7',
+			color: '#ddebf9',
 		});
 		const star = new InstancedMesh(starGeometry, starMaterial, STAR_COUNT);
 
@@ -317,7 +302,6 @@ export default function App() {
 			spaceStationClone = spaceStation.clone();
 
 			const whiteMaterial = new MeshStandardMaterial({
-				// color: new Color('#797979').convertSRGBToLinear(),
 				color: 0xffffff,
 			});
 
@@ -403,15 +387,6 @@ export default function App() {
 		ambientLight.intensity = 0.0;
 		scene.add(ambientLight);
 
-		const spotLight = new SpotLight();
-		spotLight.color = new Color('#e9f2fd');
-		spotLight.castShadow = true;
-		spotLight.shadow.mapSize.set(4096, 4096);
-		spotLight.intensity = 650.0;
-		spotLight.position.set(16.5, -4.2, 4.5);
-		spotLight.angle = 0.1395171118;
-		// scene.add(spotLight);
-
 		const directionalLight = new DirectionalLight();
 		directionalLight.castShadow = true;
 		directionalLight.position.set(0, -3, 1);
@@ -424,9 +399,6 @@ export default function App() {
 
 		const axesHelp = new AxesHelper();
 		scene.add(axesHelp);
-
-		const spotLightHelper = new SpotLightHelper(spotLight);
-		scene.add(spotLightHelper);
 
 		const directionalLightHelper = new DirectionalLightHelper(directionalLight);
 		scene.add(directionalLightHelper);
@@ -444,16 +416,6 @@ export default function App() {
 		pane.addBinding(bloomPass, 'radius');
 		pane.addBinding(bloomPass, 'strength');
 		pane.addBinding(bloomPass, 'enabled');
-
-		pane.addBinding(spotLight, 'intensity');
-		pane.addBinding(spotLight, 'position');
-		pane.addBinding(spotLight, 'angle', {
-			min: 0,
-			max: Math.PI / 2,
-		});
-		pane.addBinding(spotLight, 'color', {
-			color: { type: 'float' },
-		});
 
 		pane.addBinding(directionalLight, 'intensity', {
 			min: 0,
@@ -494,7 +456,6 @@ export default function App() {
 
 			stats.update();
 			controls.update(time);
-			spotLightHelper.update();
 
 			composer.render();
 
