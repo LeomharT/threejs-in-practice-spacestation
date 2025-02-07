@@ -4,14 +4,15 @@ import {
 	AxesHelper,
 	Clock,
 	Color,
+	CubeCamera,
 	DirectionalLight,
 	DirectionalLightHelper,
 	DoubleSide,
-	EquirectangularReflectionMapping,
 	InstancedMesh,
 	Mesh,
 	MeshBasicMaterial,
 	MeshStandardMaterial,
+	NearestFilter,
 	Object3D,
 	PerspectiveCamera,
 	PlaneGeometry,
@@ -21,6 +22,7 @@ import {
 	TextureLoader,
 	Vector2,
 	Vector3,
+	WebGLCubeRenderTarget,
 	WebGLRenderer,
 } from 'three';
 import {
@@ -38,6 +40,8 @@ import { Pane } from 'tweakpane';
 import fragmentShader from './shader/fragment.glsl?raw';
 import vertexShader from './shader/vertex.glsl?raw';
 import classes from './style.module.css';
+
+const STAR_LAYER = 1;
 
 export default function App() {
 	function random(min: number, max: number) {
@@ -63,7 +67,7 @@ export default function App() {
 		el.append(renderer.domElement);
 
 		const scene = new Scene();
-		scene.background = new Color('#0d1b2f');
+		scene.background = new Color('#051222');
 
 		const camera = new PerspectiveCamera(
 			25,
@@ -81,6 +85,14 @@ export default function App() {
 		const stats = new Stats();
 		el.append(stats.dom);
 
+		const cubeRenderTarget = new WebGLCubeRenderTarget(512, {
+			generateMipmaps: true,
+			magFilter: NearestFilter,
+			minFilter: NearestFilter,
+		});
+		const cubeCamera = new CubeCamera(0.1, 500, cubeRenderTarget);
+		cubeCamera.layers.set(STAR_LAYER);
+
 		/**
 		 * Effects
 		 */
@@ -92,8 +104,8 @@ export default function App() {
 
 		const bloomPass = new UnrealBloomPass(
 			new Vector2(window.innerWidth, window.innerHeight),
-			0.25,
-			0.5,
+			0.285,
+			0.45,
 			0
 		);
 		composer.addPass(bloomPass);
@@ -129,19 +141,6 @@ export default function App() {
 		 */
 
 		const engineAlpha = textureLoader.load('alpha.png');
-		rgbeLoader.load('kloofendal_48d_partly_cloudy_puresky_1k.hdr', (data) => {
-			/**
-			 * Environment
-			 */
-			scene.environment = data;
-			scene.environment.mapping = EquirectangularReflectionMapping;
-			scene.environmentIntensity = 0.001;
-			pane.addBinding(scene, 'environmentIntensity', {
-				step: 0.001,
-				min: 0,
-				max: 1,
-			});
-		});
 
 		/**
 		 * Variables
@@ -186,13 +185,14 @@ export default function App() {
 		 * Scene
 		 */
 
-		const starGeometry = new PlaneGeometry(0.05, 0.05);
+		const starGeometry = new PlaneGeometry(0.05, 0.02);
 		const starMaterial = new MeshBasicMaterial({
 			transparent: true,
 			side: DoubleSide,
-			color: '#ddebf9',
+			color: '#efeff1',
 		});
 		const star = new InstancedMesh(starGeometry, starMaterial, STAR_COUNT);
+		star.layers.enable(STAR_LAYER);
 
 		const targetObject = new Object3D();
 
@@ -204,8 +204,6 @@ export default function App() {
 		}
 
 		scene.add(star);
-
-		const pane = new Pane({ title: 'Debug Params' });
 
 		let spaceStationClone: undefined | Object3D;
 
@@ -353,9 +351,6 @@ export default function App() {
 				alphaTest: 0.0001,
 				side: DoubleSide,
 			});
-			pane.addBinding(engineMaterial, 'color', {
-				color: { type: 'float' },
-			});
 
 			const engine = new Mesh(engineGeometry, engineMaterial);
 			engine.rotation.y = Math.PI / 2;
@@ -389,8 +384,7 @@ export default function App() {
 
 		const directionalLight = new DirectionalLight();
 		directionalLight.castShadow = true;
-		directionalLight.position.set(0, -3, 1);
-		directionalLight.intensity = 2.5;
+		directionalLight.position.set(0.8696, -2.1739, 1.9565);
 		scene.add(directionalLight);
 
 		/**
@@ -401,37 +395,62 @@ export default function App() {
 		scene.add(axesHelp);
 
 		const directionalLightHelper = new DirectionalLightHelper(directionalLight);
+		directionalLightHelper.visible = true;
 		scene.add(directionalLightHelper);
 
 		/**
 		 * Pane
 		 */
-
-		pane.addBinding(scene, 'background', {
-			color: {
-				type: 'float',
-			},
-		});
-
-		pane.addBinding(bloomPass, 'radius');
-		pane.addBinding(bloomPass, 'strength');
-		pane.addBinding(bloomPass, 'enabled');
-
-		pane.addBinding(directionalLight, 'intensity', {
-			min: 0,
-			max: 100,
-			step: 0.01,
-		});
-		pane.addBinding(directionalLight, 'color', {
-			color: {
-				type: 'float',
-			},
-		});
-
-		pane.addBinding(camera, 'fov').on('change', (val) => {
-			camera.fov = val.value;
-			camera.updateProjectionMatrix();
-		});
+		const pane = new Pane({ title: 'Debug Params' });
+		{
+			pane.addBinding(scene, 'background', {
+				color: { type: 'float' },
+			});
+		}
+		{
+			pane.addBinding(bloomPass, 'strength', {
+				step: 0.0001,
+				min: 0,
+				max: 1,
+			});
+			pane.addBinding(bloomPass, 'radius', {
+				step: 0.0001,
+				min: 0,
+				max: 1,
+			});
+		}
+		{
+			pane.addBinding(directionalLight, 'intensity', {
+				label: 'Directional Light Intensity',
+				step: 0.0001,
+				min: 0,
+				max: 10,
+			});
+			pane.addBinding(directionalLight.position, 'x', {
+				label: 'Directional Light X',
+				step: 0.0001,
+				min: -10,
+				max: 10,
+			});
+			pane.addBinding(directionalLight.position, 'y', {
+				label: 'Directional Light Y',
+				step: 0.0001,
+				min: -10,
+				max: 10,
+			});
+			pane.addBinding(directionalLight.position, 'z', {
+				label: 'Directional Light Z',
+				step: 0.0001,
+				min: -10,
+				max: 10,
+			});
+			pane.addBinding(directionalLight, 'color', {
+				label: 'Directional Light Color',
+				color: {
+					type: 'float',
+				},
+			});
+		}
 
 		/**
 		 * Events
@@ -451,11 +470,14 @@ export default function App() {
 
 		const updateObject = new Object3D();
 
-		function render(time?: number) {
+		function render(time: number = 0) {
 			requestAnimationFrame(render);
 
 			stats.update();
 			controls.update(time);
+			directionalLightHelper.update();
+
+			cubeCamera.update(renderer, scene);
 
 			composer.render();
 
